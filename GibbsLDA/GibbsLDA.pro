@@ -40,6 +40,6 @@ else:unix: LIBS += -L$$OUT_PWD/../Munkres/ -lMunkres
 INCLUDEPATH += $$PWD/../Munkres
 DEPENDPATH += $$PWD/../Munkres
 
-win32:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Munkres/release/Munkres.lib
-else:win32:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Munkres/debug/Munkres.lib
+win32:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Munkres/release/libMunkres.a
+else:win32:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../Munkres/debug/libMunkres.a
 else:unix: PRE_TARGETDEPS += $$OUT_PWD/../Munkres/libMunkres.a
