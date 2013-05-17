@@ -407,7 +407,7 @@ bool MainWindow::event(QEvent *event)
         iters[lastIter] = pEvent->iter;
         perplexityCurve->setRawSamples(iters, perplexity, lastIter + 1);
         perplexityPlot->replot();
-        qDebug() << pEvent->iter << pEvent->perplexity;
+        //qDebug() << pEvent->iter << pEvent->perplexity;
     } else if (event->type() == (QEvent::Type)(QEvent::User + 4)) {
         // Distance event
         QDistanceEvent *pEvent = (QDistanceEvent *)event;

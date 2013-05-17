@@ -18,7 +18,7 @@
 
 #include "munkres.h"
 
-#define DEBUG
+//#define DEBUG
 
 #include <iostream>
 #include <cmath>
