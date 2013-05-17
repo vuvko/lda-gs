@@ -166,6 +166,9 @@ public:
     int sampling(int m, int n);
     void compute_theta();
     void compute_phi();
+    void sparse_theta();
+    void sparse_phi();
+    void compute_distance();
     
     // init for inference
     int init_inf();

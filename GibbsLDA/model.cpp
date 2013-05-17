@@ -1013,30 +1013,8 @@ void model::estimate() {
         
         if (r_iter > 0) {
             if (liter % r_iter == 0) {
-                long long phi_it = K * V * (phi_perc / 100.0);
-                long long theta_it = M * K * (theta_perc / 100.0);
-                for (int k = 0; k < K && theta_it; ++k) {
-                    for (int m = 0; m < M && theta_it; ++m) {
-                        double r = (rand() + 0.0) / RAND_MAX * 0.1;
-                        if (r > (nd[m][k] + alpha) / (ndsum[m] + K * alpha)) {
-                        //if ((nd[m][k] + alpha) / (ndsum[m] + K * alpha) < 0.1) {
-                            ndsum[m] -= nd[m][k];
-                            nd[m][k] = 0;
-                            theta_it--;
-                        }
-                    }
-                }
-                for (int k = 0; k < K && phi_it; ++k) {
-                    for (int w = 0; w < V && phi_it; ++w) {
-                        double r = (rand() + 0.0) / RAND_MAX * 0.1;
-                        if (r > (nw[w][k] + beta) / (nwsum[k] + V * beta)) {
-                        //if ((nw[w][k] + beta) / (nwsum[k] + V * beta) < 0.1) {
-                            nwsum[k] -= nw[w][k];
-                            nw[w][k] = 0;
-                            phi_it--;
-                        }
-                    }
-                }
+                sparse_theta();
+                sparse_phi();
             }
         }
         if (savestep > 0) {
@@ -1056,35 +1034,7 @@ void model::estimate() {
                     perplexity_callback(utils::calc_perplexity(this), liter, parent);
                 }
                 if (use_hungarian) {
-                    int cp = 1;
-                    if (K > K_real) {
-                        cp = (K + K_real - 1) / K_real;
-                    }
-                    for (int i = 0; i < K; ++i) {
-                        for (int j = 0; j < K_real * cp; ++j) {
-                            double tmp = utils::compute_dist(phi[i], phi_real[j % K_real], V);
-                            cout << tmp << ' ';
-                            distance(i, j) = tmp;
-                        }
-                        cout << endl;
-                    }
-                    Munkres m;
-                    m.solve(distance);
-                    double dist = 0;
-                    int h_topic = 0;
-                    for (int i = 0; i < K; ++i) {
-                        for (int j = 0; j < K_real * cp; ++j) {
-                            if (distance(i, j) > -eps) {
-                                h_topic = j % K_real;
-                                break;
-                            }
-                        }
-                        dist += utils::compute_dist(phi[i], phi_real[h_topic], V);
-                    }
-                    dist /= K_real;
-                    if (distance_callback) {
-                        distance_callback(dist, liter, parent);
-                    }
+                    compute_distance();
                 }
             }
         }
@@ -1114,20 +1064,12 @@ int model::sampling(int m, int n) {
     ndsum[m] -= 1;
 
     if (nw[w][topic] < 0) {
-        cout << "nw " << w << ':' << topic << " --- 0!!!" << endl;
         nw[w][topic] += 1;
         nwsum[topic] += 1;
     }
     if (nd[m][topic] < 0) {
-        cout << "nd " << m << ':' << topic << " --- 0!!!" << endl;
         nd[m][topic] += 1;
         ndsum[topic] += 1;
-    }
-    if (nwsum[topic] < 0) {
-        cout << "nwsum " << topic << " --- 0!!!" << endl;
-    }
-    if (ndsum[m] < 0) {
-        cout << "ndsum " << m << " --- 0!!!" << endl;
     }
 
     // do multinomial sampling via cumulative method
@@ -1161,16 +1103,7 @@ int model::sampling(int m, int n) {
 void model::compute_theta() {
     for (int m = 0; m < M; m++) {
         for (int k = 0; k < K; k++) {
-            if (nd[m][k] < 0) {
-                cout << "t nd " << m << ':' << k << " 0" << endl;
-            }
-            if (ndsum[m] < 0) {
-                cout << "t ndsum" << m << " 0" << endl;
-            }
             theta[m][k] = (nd[m][k] + alpha) / (ndsum[m] + K * alpha);
-            if (theta[m][k] < 0) {
-                cout << "theta < 0!!! " << m << ':' << k << endl;
-            }
         }
     }
 }
@@ -1178,17 +1111,85 @@ void model::compute_theta() {
 void model::compute_phi() {
     for (int k = 0; k < K; k++) {
         for (int w = 0; w < V; w++) {
-            if (nw[w][k] < 0) {
-                cout << "p nw " << w << ':' << k << " 0" << endl;
-            }
-            if (nwsum[k] < 0) {
-                cout << "p nwsum " << k << " 0" << endl;
-            }
             phi[k][w] = (nw[w][k] + beta) / (nwsum[k] + V * beta);
-            if (phi[k][w] < 0) {
-                cout << "phi 0!!!" << k << ':' << w << endl;
+        }
+    }
+}
+
+void model::sparse_theta() {
+    for (int m = 0; m < M; ++m) {
+        int non_zero = 0;
+        for (int k = 0; k < K; ++k) {
+            if (nd[m][k] > 0) {
+                non_zero++;
             }
         }
+        int theta_it = non_zero * theta_perc / 100.0;
+        for (int i = 0; i < theta_it; ++i) {
+            int min = ndsum[m];
+            int min_idx = 0;
+            for (int k = 0; k < K; ++k) {
+                if (nd[m][k] < min) {
+                    min = nd[m][k];
+                    min_idx = k;
+                }
+            }
+            ndsum[m] -= min;
+            nd[m][min_idx] = 0;
+        }
+    }
+}
+
+void model::sparse_phi() {
+    for (int k = 0; k < K; ++k) {
+        int non_zero = 0;
+        for (int w = 0; w < V; ++w) {
+            if (nw[w][k] > 0) {
+                non_zero++;
+            }
+        }
+        int phi_it = non_zero * phi_perc / 100.0;
+        for (int i = 0; i < phi_it; ++i) {
+            int min = nwsum[k];
+            int min_idx = 0;
+            for (int w = 0; w < V; ++w) {
+                if (nw[w][k] < min) {
+                    min = nw[w][k];
+                    min_idx = w;
+                }
+            }
+            nwsum[k] -= min;
+            nw[k][min_idx] = 0;
+        }
+    }
+}
+
+void model::compute_distance() {
+    int cp = 1;
+    if (K > K_real) {
+        cp = (K + K_real - 1) / K_real;
+    }
+    for (int i = 0; i < K; ++i) {
+        for (int j = 0; j < K_real * cp; ++j) {
+            distance(i, j) = utils::compute_dist(phi[i], phi_real[j % K_real], V);
+        }
+    }
+    Munkres m;
+    m.solve(distance);
+    double dist = 0;
+    int h_topic = 0;
+    for (int i = 0; i < K; ++i) {
+        for (int j = 0; j < K_real * cp; ++j) {
+            if (distance(i, j) > -eps) {
+                h_topic = j % K_real;
+                break;
+            }
+        }
+        dist += utils::compute_dist(phi[i], phi_real[h_topic], V);
+    }
+    dist /= K_real;
+    if (distance_callback) {
+        distance_callback(dist, liter, parent);
     }
 }
 

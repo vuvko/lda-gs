@@ -309,7 +309,7 @@ string utils::generate_model_name(int iter) {
     
     return model_name;
 }
-#include <iostream>
+
 double utils::calc_perplexity(model *pmodel)
 {
     double perplexity = 0;
@@ -326,9 +326,12 @@ double utils::calc_perplexity(model *pmodel)
                 logsum += pmodel->phi[t][w] * pmodel->theta[d][t];
             }
             if (logsum < eps) {
-                continue;
+                logsum = pmodel->ptrndata->docs[d]->word_counts[i] /
+                        pmodel->ptrndata->docs[d]->real_length;
+            } else {
+                logsum = log(logsum);
             }
-            perplexity += log(logsum) * pmodel->ptrndata->docs[d]->word_counts[i];
+            perplexity += logsum * pmodel->ptrndata->docs[d]->word_counts[i];
         }
         size += pmodel->ptrndata->docs[d]->real_length;
     }
