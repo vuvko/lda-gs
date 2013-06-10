@@ -34,7 +34,6 @@ void InferenceThread::run()
     stdout = fopen("lda.log", "w");
     lda->init_inf();
     lda->inference();
-    delete lda;
     fclose(stdout);
     emit finished();
 }
@@ -51,7 +50,6 @@ void GenerateThread::run()
 {
     stdout = fopen("lda.log", "w");
     lda->generate_collection(filename, doc_len);
-    delete lda;
     fclose(stdout);
     emit finished();
 }

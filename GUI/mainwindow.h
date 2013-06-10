@@ -30,6 +30,7 @@ class  QProgressEvent : public QEvent
 {
 public:
     int percent;
+    int experiment;
     QProgressEvent() : QEvent((QEvent::Type)(QEvent::User + 1)) {}
 };
 /*
@@ -45,6 +46,7 @@ class  QPerplexityEvent : public QEvent
 public:
     int iter;
     double perplexity;
+    int experiment;
     QPerplexityEvent() : QEvent((QEvent::Type)(QEvent::User + 3)) {}
 };
 
@@ -53,6 +55,7 @@ class  QDistanceEvent : public QEvent
 public:
     int iter;
     double distance;
+    int experiment;
     QDistanceEvent() : QEvent((QEvent::Type)(QEvent::User + 4)) {}
 };
 
@@ -93,17 +96,22 @@ private:
     Ui::MainWindow *ui;
     //model lda;
     bool running;
-    EstimateThread *estThread;
+    EstimateThread **estThreads;
     InferenceThread *infThread;
     GenerateThread *genThread;
-    double *perplexity;
-    double *distance;
+    double **perplexity;
+    double *perplexityAvr;
+    double **distance;
+    double *distanceAvr;
     double *iters;
-    int lastIter;
+    int *lastIter;
+    int nExperiments;
     QwtPlot *perplexityPlot;
     QwtPlot *distancePlot;
-    QwtPlotCurve *perplexityCurve;
-    QwtPlotCurve *distanceCurve;
+    QwtPlotCurve **perplexityCurves;
+    QwtPlotCurve *perplexityAvrCurve;
+    QwtPlotCurve **distanceCurves;
+    QwtPlotCurve *distanceAvrCurve;
     QwtPlotGrid *perplexityGrid;
     QwtPlotGrid *distanceGrid;
     QFile *logFile;
@@ -111,10 +119,10 @@ private:
 
     void setControls(bool enable);
 
-    static void progressCallback(int percent, MainWindow *toThis);
+    static void progressCallback(int percent, MainWindow *toThis, int experiment);
     //static void messageCallback(string message, MainWindow *toThis);
-    static void perplexityCallback(double perplexity, int iter, MainWindow *toThis);
-    static void distanceCallback(double distance, int iter, MainWindow *toThis);
+    static void perplexityCallback(double perplexity, int iter, MainWindow *toThis, int experiment);
+    static void distanceCallback(double distance, int iter, MainWindow *toThis, int experiment);
 };
 
 #endif // MAINWINDOW_H

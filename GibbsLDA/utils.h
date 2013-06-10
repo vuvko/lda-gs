@@ -51,7 +51,7 @@ namespace utils
     void quicksort(vector<pair<int, double> > & vect, int left, int right);
 
     // compute hellinger distance between distributions
-    double compute_dist(const double *p, const double *q, int length);
+    double hellinger_dist(const double *p, const double *q, int length);
 
 }// end of namespace utils
 
