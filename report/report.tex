@@ -3,8 +3,11 @@
 \usepackage[russian]{babel}
 \usepackage[colorlinks,urlcolor=blue]{hyperref}
 \usepackage[vlined,ruled,linesnumbered]{algorithm2e}
+\usepackage{caption, subcaption,amsmath,amssymb,graphicx,multicol}
 
 \begin{document}
+
+% Переделать графики в eps
 
 \section{Определения и обозначения}
 Имеется задача тематического моделирования, решаемая с помощью модели LDA (Latent Dirichlet Allocation). 
@@ -73,16 +76,17 @@ $\displaystyle \varphi_{wt} = p(w\,|\,t) $ --- распределение сло
 
 \[
   \rho(t_{\,0},t) = 
-    \sum_{w\in W}\left(
+    \frac12\sum_{w\in W}\left(
       \sqrt{p_{\,0}(w\,|\,t_{\,0})} - \sqrt{p\,(w\,|\,t)}
     \right)^2 + 
-    \gamma\!\sum_{d\in D}\left(
+    \frac\gamma2\!\sum_{d\in D}\left(
       \sqrt{p_{\,0}(d\,|\,t_{\,0})} - \sqrt{p\,(d\,|\,t)}
     \right)^2
 \]
-$\displaystyle \gamma $ --- некоторый параметр. \newline
 $\displaystyle p_{\,0}(w\,|\,t) $ --- <<реальное>> распределение слов по~темам. \newline
-$\displaystyle p_{\,0}(d\,|\,t) $ --- <<реальное>> распределение документов по~тематикам, вычисляемое по~правилу Байеса.
+$\displaystyle p_{\,0}(d\,|\,t) $ --- <<реальное>> распределение документов по~тематикам, вычисляемое по~правилу Байеса.\newline
+$\displaystyle \gamma $ --- некоторый параметр. 
+Заметим, что при $ \gamma = 0 $ получаем формулу расстояния Хэллингера между распределениями $ p_{\,0}(w\,|\,t) $ и $ p_{\,0}(d\,|\,t) $.
 
 Фактически, требуется решить задачу о назначениях.
 Будем использовать Венгерский алгоритм для её решения.
@@ -96,8 +100,6 @@ R = \frac1{|T_0|} \sum_{t_{\,0}\in T_0} \rho(t_{\,0},V(t_{\,0}))
 $\displaystyle V(t_{\,0}) $ --- найденное Венгерским алгоритмом соответствие для темы $ t_{\,0} $.
 
 \subsection{Эксперименты}
-
-Для проведения экспериментов сгенерируем модельные данные по алгоритму \ref{alg:genData} с~параметрами: $ \alpha_0 $, $ \beta_{\,0} $ --- гиперпараметры распределения Дирихле, $ K_0 $ --- количество тем, $ \theta_{td}^{\,0} = p_{\,0}(t\,|\,d) \sim Dir_V(\alpha_0) $, $ \varphi_{wt}^0 = p_{\,0}(w\,|\,t) \sim Dir_{K_0}(\beta_{\,0}) $. 
 
 \begin{algorithm}
 \label{alg:genData}
@@ -114,32 +116,160 @@ $\displaystyle V(t_{\,0}) $ --- найденное Венгерским алго
 
 \end{algorithm}
 
-%Построить графики перплексии и введённого критерия качества на каждой итерации обучения модели на сгенерированных данных.
+Модель LDA основывается на распределение Дирихле, которое генерирует разреженные распределения при малых гиперпараметрах и близкое к равномерному при больших.
+Проверим, насколько хорошо модель работает на модельных данных, которые сгенерированы с~помощью алгоритма \ref{alg:genData} при $ \alpha_0 = \beta_0 = 0.0001 $, а также $ \alpha_0 = \beta_0 = 10 $.
+Для каждой из двух коллекций сгенерируем 1\,000 документов, каждый состоящий из 1\,000 слов, взятых из словаря мощностью 6\,000.
 
-На полученых модельных данных проведём несколько экспериментов:
+Проверим работу LDA на каждой из коллекций, задавая сначала гиперпараметры $ \alpha = \beta = 0,01 $, а затем $ \alpha = \beta = 10 $.
+Для этого проведём каждый эксперимент 10 раз и построим графики перплексии и критерия при $ \gamma = 0 $.
+Также отметим отдельно эксперимент, который на последней итерации имеет наименьшее значение перплексии.
 
-\begin{enumerate}
-  \item Начальные параметры модели ($ \alpha $, $ \beta $, $ K $) совпадают с параметрами модельной выборки.
-  \item Неоднократный запуск обучения с одинаковыми параметрами (проверка устойчивости).
-  \item Различные значения гиперпараметров $ \alpha $, $ \beta $ и количества тем $ T $.
-\end{enumerate}
+\begin{figure}[hbtp]
+  \centering
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{sparse_data_low_parameters_perp.png}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{sparse_data_low_parameters_dist.png}
+  \end{subfigure}
+  \caption{Разреженная коллекция, $ \alpha = \beta = 0,01 $.}
+  \label{fig:sparse_data_low_parameters}
+\end{figure}
 
-При проведении каждого из эксперимантов были построены графики перплексии и нового введёного критерия:
+\begin{figure}[hbtp]
+  \centering
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{sparse_data_high_parameters_perp.png}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{sparse_data_high_parameters_dist.png}
+  \end{subfigure}
+  \caption{Разреженная коллекция, $ \alpha = \beta = 10 $}
+  \label{fig:sparse_data_high_parameters}
+\end{figure}
 
-% Вставить графики
+\begin{figure}[hbtp]
+  \centering
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{non_sparse_data_low_parameters_perp.png}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{non_sparse_data_low_parameters_dist.png}
+  \end{subfigure}
+  \caption{Неразреженная коллекция, $ \alpha = \beta = 0,01 $.}
+  \label{fig:non_sparse_data_low_parameters}
+\end{figure}
 
-\subsection{Идеи повышения устойчивости модели}
-\begin{itemize}
-  \item Более точная оценка гиперпараметров $ \alpha $, $ \beta $.
-  \item Разреженность $ \theta_{td} $ и $ \varphi_{wt} $. 
-  Добавить этап разреживания в~алгоритм обучения модели. 
-  Использовать различные параметры $ r_\theta $, $ r_\varphi $ -- доля нулевых элементов в $ \theta_{td} $ и $ \varphi_{wt} $ для~разреживания.
-  % как лучше разреживать матрицы? Рандомно в зависимости от вероятности или лучше построить гистограмму и обрезать наименьшие?
-\end{itemize}
+\begin{figure}[hbtp]
+  \centering
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{non_sparse_data_high_parameters_perp.png}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{non_sparse_data_high_parameters_dist.png}
+  \end{subfigure}
+  \caption{Неразреженная коллекция, $ \alpha = \beta = 10 $}
+  \label{fig:non_sparse_data_high_parameters}
+\end{figure}
 
-% Проверить идеи и провести эксперименты
+Из графиков \ref{fig:sparse_data_low_parameters} и \ref{fig:sparse_data_high_parameters} видно, что модель хорошо справляется с разреженной коллекцией при малых значениях гиперпараметров.
+При больших же значениях сглаженные оценки для $ \phi_{wt} $ и $ \theta_{td} $, использующиеся в сэмплировании, становятся близкими к значению $ \frac \alpha {K \alpha} $, из-за чего получаются близкие к равномерному распределения слов и тем.
 
-% 
+При работе с неразреженной коллекцией графики несколько интереснее.
+Хотя перплексия и уменьшается, расстояние между матрицей $ \phi_{wt} $ и $ \phi_{wt}^0 $ (модельной) растёт.
+Это означает, что начальное приближение является почти равномерным.
+Действительно, учитывая то, что коллекция была порождена очень близкими к равномерному распределениями, то распределение слов в документах оказалось тоже близко к равномерному.
+А значит и все начальные рприближения будут близки к равномерным из-за особенности их реализации (в использующейся реализации начальные приближения задавались пробегом по коллекции и присвоению каждому слову случайной темы).
+
+Но если при использовании малых гиперпараметров мы получали "далёкую" матрицу $ \phi_{wt} $, но более разреженную, то в случае больших гиперпараметров в итоге получается всё равно близкое к равномерному распределение.
+Поэтому значение критерия в случае больших параметров получилось столь малым.
+
+Также заметим, что выделенный нами эксперимент не всегда на протяжении обучения является лучшим.
+Он даже не обязательно связан с более оптимальным начальным приближением.
+
+\subsection{Значение критерия}
+
+Мы получили некоторое значение критерия, но насколько оно отражает пригодность модели не понятно.
+Чтобы понять насколько хорошо модельные распределения $ \phi_{wt}^0 $ и $ \theta_{td}^{\,0} $ можно восстановить по сгенерированной коллекции, сгенерируем коллекцию несколько раз, задавая одинаковые $ \phi_{wt}^1 $ и $ \theta_{td}^{\,1} $, равные модельным $ \phi_{wt}^0 $, $ \theta_{td}^{\,0} $, и построим частотные оценки распределений.
+Затем посчитаем расстояние Хэллингера между $ \phi_{wt}^0 $ и полученными оценками $ \phi_{wt}^1 $, аналогично для $ \theta_{td}^{\,0} $ и $ \theta_{td}^1 $.
+
+Получаем, что для разреженной коллекции наша оценка получилась примерно $ 10^{-2} $, а для неразреженной $ 10^{-5} $.
+
+\subsection{Улучшение модели}
+
+Так как для сэмплирования мы используем только счётчики слов и тем, а не сами распределения $ \phi_{wt} $ и $ \theta_{td} $, то можно убрать сглаживание оценок из их вычисления.
+На сходимость модели это не повлияет, так как мы не меняет наши счётчики, но мы получаем не сглаженные $ \phi_{wt} $ и $ \theta_{td} $, что должно лучше отражать разреженность исходных данных.
+
+Проверим эту идею на наших модельных данных и сравним работу LDA с "полусглаживаем" с исходным.
+
+\begin{figure}[hbtp]
+  \centering
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{sparse_data_low_parameters_half_smooth_perp.png}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{sparse_data_low_parameters_half_smooth_dist.png}
+  \end{subfigure}
+  \caption{Разреженная коллекция, $ \alpha = \beta = 0,01 $.}
+  \label{fig:sparse_data_low_parameters_half_smooth}
+\end{figure}
+
+\begin{figure}[hbtp]
+  \centering
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{sparse_data_high_parameters_half_smooth_perp.png}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{sparse_data_high_parameters_half_smooth_dist.png}
+  \end{subfigure}
+  \caption{Разреженная коллекция, $ \alpha = \beta = 10 $}
+  \label{fig:sparse_data_high_parameters_half_smooth}
+\end{figure}
+
+\begin{figure}[p]
+  \centering
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{non_sparse_data_low_parameters_half_smooth_perp.png}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{non_sparse_data_low_parameters_half_smooth_dist.png}
+  \end{subfigure}
+  \caption{Неразреженная коллекция, $ \alpha = \beta = 0,01 $.}
+  \label{fig:non_sparse_data_low_parameters_half_smooth}
+\end{figure}
+
+\begin{figure}[hbtp]
+  \centering
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{non_sparse_data_high_parameters_half_smooth_perp.png}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{non_sparse_data_high_parameters_half_smooth_dist.png}
+  \end{subfigure}
+  \caption{Неразреженная коллекция, $ \alpha = \beta = 10 $}
+  \label{fig:non_sparse_data_high_parameters_half_smooth}
+\end{figure}
+
+Из графиков \ref{fig:sparse_data_low_parameters_half_smooth}--\ref{fig:non_sparse_data_high_parameters_half_smooth} видно, что перплексия везде уменьшилась.
+Для разреженной коллекции также уменьшилось значение критерия, что означает, что матрица $ \phi_{wt} $ получилось более близкой к модельной рареженной матрице $ \phi_{wt}^0 $.
+А для неразреженной коллекции значение критерия наоборот увеличилось, но это говорит о том, что $ \phi_{wt} $ оказалась "дальше" от модельной.
+Из всего этого можно сделать вывод, что "полусглаживание" действительно не влияет на сходимость модели, а распределения $ \phi_{wt} $ и $ \theta_{td} $ получаются более разреженными.
 
 \begin{thebibliography}{0}
 \bibitem{gibbslda++}

@@ -41,8 +41,8 @@ using namespace std;
 
 const double eps = 0.000001;
 
-typedef void (*PCALLBACK)(int percent, void *parent);
-typedef void (*DCALLBACK)(double value, int iter, void *parent);
+typedef void (*PCALLBACK)(int percent, void *parent, int experiment);
+typedef void (*DCALLBACK)(double value, int iter, void *parent, int experiment);
 
 // LDA model
 class model {
@@ -70,12 +70,16 @@ public:
 
     mapid2word id2word; // word map [int => string]
 
+    int experiment;
+    bool use_soft;
     // for hungarian algorithm
     bool use_hungarian;
+    double gamma;
     Matrix<double> distance;
     int K_real;
     double **phi_real;
     double **theta_real;
+    double **inv_theta_real;
 
     // for robast model
     int phi_perc;
@@ -102,6 +106,7 @@ public:
     int * ndsum; // nasum[i]: total number of words in document i, size M
     double ** theta; // theta: document-topic distributions, size M x K
     double ** phi; // phi: topic-word distributions, size K x V
+    double ** inv_theta; // p(d|t) = p(t|d) * p(d) / sum_d (p(t|d) * p(d))
     
     // for inference only
     int inf_liter;

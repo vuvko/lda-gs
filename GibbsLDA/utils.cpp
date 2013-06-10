@@ -393,15 +393,17 @@ void utils::quicksort(vector<pair<int, double> > & vect, int left, int right) {
     }
 }
 #include <iostream>
-double utils::compute_dist(const double *p, const double *q, int length)
+double utils::hellinger_dist(const double *p, const double *q, int length)
 {
     if (!p || !q) {
         return -1;
     }
     double distance = 0;
     for (int i = 0; i < length; ++i) {
-        double element = sqrt(p[i]) - sqrt(q[i]);
-        //cout << p[i] << ' ' << q[i] << ' ' << element << endl;
+        double p_i = p[i] < 0 ? 0 : p[i];
+        double q_i = q[i] < 0 ? 0 : q[i];
+        double element = sqrt(p_i) - sqrt(q_i);
+        //cout << p_i << ' ' << q_i << ' ' << element << endl;
         distance += element * element;
     }
     distance /= 2;

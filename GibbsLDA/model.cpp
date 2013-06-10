@@ -56,27 +56,36 @@ model::~model() {
     }
 
     if (z) {
+        /*
         for (int m = 0; m < M; m++) {
             if (z[m]) {
                 delete z[m];
             }
         }
+        */
+        delete [] z;
     }
     
     if (nw) {
+        /*
         for (int w = 0; w < V; w++) {
             if (nw[w]) {
                 delete nw[w];
             }
         }
+        */
+        delete [] nw;
     }
 
     if (nd) {
+        /*
         for (int m = 0; m < M; m++) {
             if (nd[m]) {
                 delete nd[m];
             }
         }
+        */
+        delete [] nd;
     }
     
     if (nwsum) {
@@ -88,60 +97,103 @@ model::~model() {
     }
     
     if (theta) {
+        /*
         for (int m = 0; m < M; m++) {
             if (theta[m]) {
                 delete theta[m];
             }
         }
+        */
+        delete [] theta;
     }
     
     if (theta_real) {
+        /*
         for (int m = 0; m < M; m++) {
             if (theta_real[m]) {
                 delete theta_real[m];
             }
         }
+        */
+        delete [] theta_real;
+    }
+
+    if (inv_theta) {
+        /*
+        for (int m = 0; m < M; ++m) {
+            if (inv_theta[m]) {
+                delete inv_theta[m];
+            }
+        }
+        */
+        delete [] inv_theta;
+    }
+
+    if (inv_theta_real) {
+        /*
+        for (int m = 0; m < M; ++m) {
+            if (inv_theta_real[m]) {
+                delete inv_theta_real[m];
+            }
+        }
+        */
+        delete [] inv_theta_real;
     }
 
     if (phi) {
+        /*
         for (int k = 0; k < K; k++) {
             if (phi[k]) {
                 delete phi[k];
             }
         }
+        */
+        delete [] phi;
     }
 
     if (phi_real) {
+        /*
         for (int k = 0; k < K; k++) {
             if (phi_real[k]) {
                 delete phi_real[k];
             }
         }
+        */
+        delete [] phi_real;
     }
 
     // only for inference
     if (newz) {
+        /*
         for (int m = 0; m < newM; m++) {
             if (newz[m]) {
                 delete newz[m];
             }
         }
+        */
+        delete [] newz;
     }
     
     if (newnw) {
+        /*
         for (int w = 0; w < newV; w++) {
             if (newnw[w]) {
                 delete newnw[w];
             }
         }
+        */
+        delete [] newnw;
     }
 
     if (newnd) {
+        /*
         for (int m = 0; m < newM; m++) {
             if (newnd[m]) {
                 delete newnd[m];
             }
         }
+        */
+        delete [] newnd;
     }
     
     if (newnwsum) {
@@ -153,19 +205,25 @@ model::~model() {
     }
     
     if (newtheta) {
+        /*
         for (int m = 0; m < newM; m++) {
             if (newtheta[m]) {
                 delete newtheta[m];
             }
         }
+        */
+        delete [] newtheta;
     }
     
     if (newphi) {
+        /*
         for (int k = 0; k < K; k++) {
             if (newphi[k]) {
                 delete newphi[k];
             }
         }
+        */
+        delete [] newphi;
     }
 }
 
@@ -196,6 +254,8 @@ model::model()
     ndsum = NULL;
     theta = NULL;
     theta_real = NULL;
+    inv_theta = NULL;
+    inv_theta_real = NULL;
     phi = NULL;
     phi_real = NULL;
 
@@ -299,6 +359,22 @@ void model::set_default_values() {
         }
     }
     theta_real = NULL;
+    if (inv_theta) {
+        for (int m = 0; m < M; ++m) {
+            if (inv_theta[m]) {
+                delete inv_theta[m];
+            }
+        }
+    }
+    inv_theta = NULL;
+    if (inv_theta_real) {
+        for (int m = 0; m < M; ++m) {
+            if (inv_theta_real[m]) {
+                delete inv_theta_real[m];
+            }
+        }
+    }
+    inv_theta_real = NULL;
     if (phi) {
         for (int k = 0; k < K; k++) {
             if (phi[k]) {
@@ -508,6 +584,17 @@ int model::load_theta(string filename)
         }
     }
     fclose(fin);
+    inv_theta_real = new double *[K_real];
+    for (int k = 0; k < K_real; ++k) {
+        inv_theta_real[k] = new double[M];
+        double theta_sum = 0;
+        for (int m = 0; m < M; ++m) {
+            theta_sum += theta_real[m][k];
+        }
+        for (int m = 0; m < M; ++m) {
+            inv_theta_real[k][m] = theta_real[m][k] / theta_sum;
+        }
+    }
     return 0;
 }
 
@@ -814,7 +901,7 @@ int model::init_est() {
     p = new double[K];
 
     if (progress_callback) {
-        progress_callback(0, parent);
+        progress_callback(0, parent, experiment);
     }
 
     // + read training data
@@ -873,12 +960,12 @@ int model::init_est() {
             z[m][n] = topic;
 
             // number of instances of word i assigned to topic j
-            nw[ptrndata->docs[m]->words[n]][topic] += 1;
+            nw[ptrndata->docs[m]->words[n]][topic] += ptrndata->docs[m]->word_counts[n];
             // number of words in document i assigned to topic j
-            nd[m][topic] += 1;
+            nd[m][topic] += ptrndata->docs[m]->word_counts[n];
             // total number of words assigned to topic j
-            nwsum[topic] += 1;
-            ndsum[m] += 1;
+            nwsum[topic] += ptrndata->docs[m]->word_counts[n];
+            ndsum[m] += ptrndata->docs[m]->word_counts[n];
             //}
         }
         // total number of words in document i
@@ -890,8 +977,10 @@ int model::init_est() {
         theta[m] = new double[K];
     }
 
+    inv_theta = new double *[K];
     phi = new double*[K];
     for (k = 0; k < K; k++) {
+        inv_theta[k] = new double[M];
         phi[k] = new double[V];
     }
     if (K > K_real) {
@@ -911,7 +1000,7 @@ int model::init_estc() {
     p = new double[K];
 
     if (progress_callback) {
-        progress_callback(0, parent);
+        progress_callback(0, parent, experiment);
     }
 
     // load moel, i.e., read z and ptrndata
@@ -981,8 +1070,6 @@ int model::init_estc() {
     return 0;
 }
 
-#include <iostream>
-
 void model::estimate() {
     if (twords > 0) {
         // print out top words per topic
@@ -1001,12 +1088,12 @@ void model::estimate() {
                 if (ptrndata->docs[m]->word_counts[n] == 0) {
                     continue;
                 }
-                for (int k = 0; k < ptrndata->docs[m]->word_counts[n]; ++k) {
+                //for (int k = 0; k < ptrndata->docs[m]->word_counts[n]; ++k) {
                     // (z_i = z[m][n])
                     // sample from p(z_i|z_-i, w)
                     int topic = sampling(m, n);
                     z[m][n] = topic;
-                }
+                //}
 
             }
         }
@@ -1031,7 +1118,7 @@ void model::estimate() {
                 compute_theta();
                 compute_phi();
                 if (perplexity_callback) {
-                    perplexity_callback(utils::calc_perplexity(this), liter, parent);
+                    perplexity_callback(utils::calc_perplexity(this), liter, parent, experiment);
                 }
                 if (use_hungarian) {
                     compute_distance();
@@ -1039,7 +1126,7 @@ void model::estimate() {
             }
         }
         if (progress_callback) {
-            progress_callback((100 * (liter - last_iter)) / niters, parent);
+            progress_callback((100 * (liter - last_iter)) / niters, parent, experiment);
         }
     }
     
@@ -1048,7 +1135,7 @@ void model::estimate() {
     compute_theta();
     compute_phi();
     if (perplexity_callback) {
-        perplexity_callback(utils::calc_perplexity(this), liter, parent);
+        perplexity_callback(utils::calc_perplexity(this), liter, parent, experiment);
     }
     liter--;
     save_model(utils::generate_model_name(-1));
@@ -1058,18 +1145,19 @@ int model::sampling(int m, int n) {
     // remove z_i from the count variables
     int topic = z[m][n];
     int w = ptrndata->docs[m]->words[n];
-    nw[w][topic] -= 1;
-    nd[m][topic] -= 1;
-    nwsum[topic] -= 1;
-    ndsum[m] -= 1;
+    int count = ptrndata->docs[m]->word_counts[n];
+    nw[w][topic] -= count;
+    nd[m][topic] -= count;
+    nwsum[topic] -= count;
+    ndsum[m] -= count;
 
     if (nw[w][topic] < 0) {
-        nw[w][topic] += 1;
-        nwsum[topic] += 1;
+        nw[w][topic] += count;
+        nwsum[topic] += count;
     }
     if (nd[m][topic] < 0) {
-        nd[m][topic] += 1;
-        ndsum[topic] += 1;
+        nd[m][topic] += count;
+        ndsum[topic] += count;
     }
 
     // do multinomial sampling via cumulative method
@@ -1092,18 +1180,35 @@ int model::sampling(int m, int n) {
     }
 
     // add newly estimated z_i to count variables
-    nw[w][topic] += 1;
-    nd[m][topic] += 1;
-    nwsum[topic] += 1;
-    ndsum[m] += 1;
+    nw[w][topic] += count;
+    nd[m][topic] += count;
+    nwsum[topic] += count;
+    ndsum[m] += count;
     
     return topic;
 }
 
 void model::compute_theta() {
-    for (int m = 0; m < M; m++) {
-        for (int k = 0; k < K; k++) {
-            theta[m][k] = (nd[m][k] + alpha) / (ndsum[m] + K * alpha);
+    for (int k = 0; k < K; k++) {
+        double theta_sum = 0;
+        for (int m = 0; m < M; m++) {
+            if (use_soft) {
+                if (ndsum[m] == 0) {
+                    theta[m][k] = 0;
+                } else {
+                    theta[m][k] = nd[m][k] / double(ndsum[m]);
+                }
+            } else {
+                theta[m][k] = (nd[m][k] + alpha) / (ndsum[m] + K * alpha);
+            }
+            theta_sum += theta[m][k];
+        }
+        for (int m = 0; m < M; ++m) {
+            if (theta_sum < eps) {
+                inv_theta[k][m] = 0;
+            } else {
+                inv_theta[k][m] = theta[m][k] / theta_sum;
+            }
         }
     }
 }
@@ -1111,7 +1216,15 @@ void model::compute_theta() {
 void model::compute_phi() {
     for (int k = 0; k < K; k++) {
         for (int w = 0; w < V; w++) {
-            phi[k][w] = (nw[w][k] + beta) / (nwsum[k] + V * beta);
+            if (use_soft) {
+                if (nwsum[k] == 0) {
+                    phi[k][w] = 0;
+                } else {
+                    phi[k][w] = nw[w][k] / double(nwsum[k]);
+                }
+            } else {
+                phi[k][w] = (nw[w][k] + beta) / (nwsum[k] + V * beta);
+            }
         }
     }
 }
@@ -1171,13 +1284,18 @@ void model::compute_distance() {
     }
     for (int i = 0; i < K; ++i) {
         for (int j = 0; j < K_real * cp; ++j) {
-            distance(i, j) = utils::compute_dist(phi[i], phi_real[j % K_real], V);
+            distance(i, j) = utils::hellinger_dist(phi[i], phi_real[j % K_real], V);
+            //cout << distance(i, j) << "->";
+            distance(i, j) += gamma * utils::hellinger_dist(inv_theta[i], inv_theta_real[j % K_real], M);
+            //cout << distance(i, j) << ' ';
         }
+        //cout << endl;
     }
     Munkres m;
     m.solve(distance);
     double dist = 0;
     int h_topic = 0;
+    //cout << "Dist: " << endl;
     for (int i = 0; i < K; ++i) {
         for (int j = 0; j < K_real * cp; ++j) {
             if (distance(i, j) > -eps) {
@@ -1185,11 +1303,15 @@ void model::compute_distance() {
                 break;
             }
         }
-        dist += utils::compute_dist(phi[i], phi_real[h_topic], V);
+        dist += utils::hellinger_dist(phi[i], phi_real[h_topic], V);
+        //cout << dist << "->";
+        dist += gamma * utils::hellinger_dist(inv_theta[i], inv_theta_real[h_topic], M);
+        //cout << dist << endl;
     }
-    dist /= K_real;
+    dist /= K;
+    //cout << " = " << dist << endl;
     if (distance_callback) {
-        distance_callback(dist, liter, parent);
+        distance_callback(dist, liter, parent, experiment);
     }
 }
 
@@ -1351,7 +1473,7 @@ void model::inference() {
             }
         }
         if (progress_callback) {
-            progress_callback((100 * inf_liter) / niters, parent);
+            progress_callback((100 * inf_liter) / niters, parent, experiment);
         }
     }
     
@@ -1425,7 +1547,7 @@ void model::compute_newphi() {
 void model::generate_collection(string filename, int doc_len)
 {
     if (progress_callback) {
-        progress_callback(0, parent);
+        progress_callback(0, parent, experiment);
     }
     FILE *fout = fopen(filename.c_str(), "w");
     if (!fout) {
@@ -1500,7 +1622,7 @@ void model::generate_collection(string filename, int doc_len)
         }
         fprintf(fout, "\n");
         if (progress_callback) {
-            progress_callback((100 * (d + 1)) / M, parent);
+            progress_callback((100 * (d + 1)) / M, parent, experiment);
         }
     }
 
@@ -1512,6 +1634,6 @@ void model::generate_collection(string filename, int doc_len)
     save_model_phi(filename + phi_suffix);
     save_model_others(filename + others_suffix);
     if (progress_callback) {
-        progress_callback(100, parent);
+        progress_callback(100, parent, experiment);
     }
 }
