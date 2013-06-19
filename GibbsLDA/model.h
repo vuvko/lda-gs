@@ -125,7 +125,7 @@ public:
     ~model();
     
     // set default values for variables
-    void set_default_values();   
+    //void set_default_values();
 
     // parse command line to get options
     int parse_args(int argc, char ** argv);

@@ -44,7 +44,7 @@ using namespace std;
 
 model::~model() {
     if (p) {
-        delete p;
+        delete [] p;
     }
 
     if (ptrndata) {
@@ -56,173 +56,145 @@ model::~model() {
     }
 
     if (z) {
-        /*
         for (int m = 0; m < M; m++) {
             if (z[m]) {
-                delete z[m];
+                delete [] z[m];
             }
         }
-        */
         delete [] z;
     }
     
     if (nw) {
-        /*
         for (int w = 0; w < V; w++) {
             if (nw[w]) {
-                delete nw[w];
+                delete [] nw[w];
             }
         }
-        */
         delete [] nw;
     }
 
     if (nd) {
-        /*
         for (int m = 0; m < M; m++) {
             if (nd[m]) {
-                delete nd[m];
+                delete [] nd[m];
             }
         }
-        */
         delete [] nd;
     }
     
     if (nwsum) {
-        delete nwsum;
+        delete [] nwsum;
     }
     
     if (ndsum) {
-        delete ndsum;
+        delete [] ndsum;
     }
     
     if (theta) {
-        /*
         for (int m = 0; m < M; m++) {
             if (theta[m]) {
-                delete theta[m];
+                delete [] theta[m];
             }
         }
-        */
         delete [] theta;
     }
     
     if (theta_real) {
-        /*
         for (int m = 0; m < M; m++) {
             if (theta_real[m]) {
-                delete theta_real[m];
+                delete [] theta_real[m];
             }
         }
-        */
         delete [] theta_real;
     }
 
     if (inv_theta) {
-        /*
-        for (int m = 0; m < M; ++m) {
-            if (inv_theta[m]) {
-                delete inv_theta[m];
+        for (int k = 0; k < K; ++k) {
+            if (inv_theta[k]) {
+                delete [] inv_theta[k];
             }
         }
-        */
         delete [] inv_theta;
     }
 
     if (inv_theta_real) {
-        /*
-        for (int m = 0; m < M; ++m) {
-            if (inv_theta_real[m]) {
-                delete inv_theta_real[m];
+        for (int k = 0; k < K; ++k) {
+            if (inv_theta_real[k]) {
+                delete [] inv_theta_real[k];
             }
         }
-        */
         delete [] inv_theta_real;
     }
 
     if (phi) {
-        /*
         for (int k = 0; k < K; k++) {
             if (phi[k]) {
-                delete phi[k];
+                delete [] phi[k];
             }
         }
-        */
         delete [] phi;
     }
 
     if (phi_real) {
-        /*
         for (int k = 0; k < K; k++) {
             if (phi_real[k]) {
-                delete phi_real[k];
+                delete [] phi_real[k];
             }
         }
-        */
         delete [] phi_real;
     }
 
     // only for inference
     if (newz) {
-        /*
         for (int m = 0; m < newM; m++) {
             if (newz[m]) {
-                delete newz[m];
+                delete [] newz[m];
             }
         }
-        */
         delete [] newz;
     }
     
     if (newnw) {
-        /*
         for (int w = 0; w < newV; w++) {
             if (newnw[w]) {
-                delete newnw[w];
+                delete [] newnw[w];
             }
         }
-        */
         delete [] newnw;
     }
 
     if (newnd) {
-        /*
         for (int m = 0; m < newM; m++) {
             if (newnd[m]) {
-                delete newnd[m];
+                delete [] newnd[m];
             }
         }
-        */
         delete [] newnd;
     }
     
     if (newnwsum) {
-        delete newnwsum;
+        delete [] newnwsum;
     }
     
     if (newndsum) {
-        delete newndsum;
+        delete [] newndsum;
     }
     
     if (newtheta) {
-        /*
         for (int m = 0; m < newM; m++) {
             if (newtheta[m]) {
-                delete newtheta[m];
+                delete [] newtheta[m];
             }
         }
-        */
         delete [] newtheta;
     }
     
     if (newphi) {
-        /*
         for (int k = 0; k < K; k++) {
             if (newphi[k]) {
-                delete newphi[k];
+                delete [] newphi[k];
             }
         }
-        */
         delete [] newphi;
     }
 }
@@ -284,7 +256,7 @@ model::model()
     theta_perc = 0;
     r_iter = 0;
 }
-
+/*
 void model::set_default_values() {
     wordmapfile = "wordmap.txt";
     trainlogfile = "trainlog.txt";
@@ -457,7 +429,7 @@ void model::set_default_values() {
     theta_perc = 0;
     r_iter = 0;
 }
-
+*/
 int model::parse_args(int argc, char ** argv) {
     return utils::parse_args(argc, argv, this);
 }
@@ -625,8 +597,6 @@ int model::save_model(string model_name) {
 }
 
 int model::save_model_tassign(string filename) {
-    int i, j;
-    
     FILE * fout = fopen(filename.c_str(), "w");
     if (!fout) {
         printf("Cannot open file %s to save!\n", filename.c_str());
@@ -634,8 +604,8 @@ int model::save_model_tassign(string filename) {
     }
 
     // wirte docs with topic assignments for words
-    for (i = 0; i < ptrndata->M; i++) {
-        for (j = 0; j < ptrndata->docs[i]->length; j++) {
+    for (int i = 0; i < M; i++) {
+        for (int j = 0; j < ptrndata->docs[i]->length; j++) {
             if (z[i][j] < eps) {
                 z[i][j] = -1;
             }
@@ -953,6 +923,7 @@ int model::init_est() {
         // initialize for z
         for (n = 0; n < N; n++) {
             if (ptrndata->docs[m]->word_counts[n] == 0) {
+                z[m][n] = -1;
                 continue;
             }
             //for (int k = 0; k < ptrndata->docs[m]->word_counts[n]; ++k) {
