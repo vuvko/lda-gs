@@ -69,11 +69,12 @@ MainWindow::MainWindow(QWidget *parent) :
     estThreads = 0;
     genThread = 0;
     running = false;
-    nExperiments = 2;
+    nExperiments = 1;
     lastIter = new int[nExperiments];
     connect(ui->actionLoad, SIGNAL(triggered()), this, SLOT(LoadModel()));
     connect(ui->actionSave, SIGNAL(triggered()), this, SLOT(SaveModel()));
     connect(ui->actionSavePlot, SIGNAL(triggered()), this, SLOT(SavePlot()));
+    connect(ui->actionSavePlotVector, SIGNAL(triggered()), this, SLOT(SavePlotVector()));
     connect(ui->actionClearPlot, SIGNAL(triggered()), this, SLOT(ClearPlot()));
     connect(ui->estButton, SIGNAL(clicked()), this, SLOT(Estimate()));
     connect(ui->infButton, SIGNAL(clicked()), this, SLOT(Inference()));
@@ -102,37 +103,55 @@ MainWindow::~MainWindow()
 {
     delete ui;
     if (estThreads)
+    {
+        for (int i = 0; i < nExperiments; ++i)
+            delete estThreads[i];
         delete [] estThreads;
+    }
     if (infThread)
         delete infThread;
     if (genThread)
         delete genThread;
     if (perplexityCurves)
-        delete []perplexityCurves;
+    {
+        for (int i = 0; i < nExperiments; ++i)
+            delete perplexityCurves[i];
+        delete [] perplexityCurves;
+    }
     delete perplexityAvrCurve;
-    //delete perplexityCurve;
     delete perplexityGrid;
     delete perplexityPlot;
     if (distanceCurves)
+    {
+        for (int i = 0; i < nExperiments; ++i)
+            delete distanceCurves[i];
         delete [] distanceCurves;
-    //delete distanceCurve;
+    }
     delete distanceAvrCurve;
     delete distanceGrid;
     delete distancePlot;
     if (distance)
+    {
+        for (int i = 0; i < nExperiments; ++i)
+            delete [] distance[i];
         delete [] distance;
+    }
     if (distanceAvr)
-        delete distanceAvr;
+        delete [] distanceAvr;
     if (perplexity)
+    {
+        for (int i = 0; i < nExperiments; ++i)
+            delete [] perplexity[i];
         delete [] perplexity;
+    }
     if (perplexityAvr)
-        delete perplexityAvr;
+        delete [] perplexityAvr;
     if (iters)
-        delete iters;
+        free(iters);
     logFile->close();
     delete log;
     delete logFile;
-    delete lastIter;
+    delete [] lastIter;
 }
 
 void MainWindow::About() {}
@@ -168,7 +187,7 @@ void MainWindow::BrowseTheta()
 void MainWindow::BrowseModelInf()
 {
     model lda;
-    lda.set_default_values();
+    //lda.set_default_values();
     char filter[255];
     sprintf(filter, "Model (*%s)", lda.others_suffix.c_str());
     QString fileName = QFileDialog::getOpenFileName(this,
@@ -193,7 +212,6 @@ void MainWindow::Estimate()
     setControls(false);
     int nIters = ui->estIterBox->value();
     int pIter = ui->estPerpBox->value();
-    //lda->init_est();
     perplexityPlot->setAxisScale(QwtPlot::xBottom, 1, nIters);
     distancePlot->setAxisScale(QwtPlot::xBottom, 1, nIters);
     int size = (nIters + pIter - 1) / pIter;
@@ -202,7 +220,11 @@ void MainWindow::Estimate()
     else
         iters = (double *)realloc(iters, (size + 1) * sizeof(*iters));
     if (perplexity)
+    {
+        for (int i = 0; i < nExperiments; ++i)
+            delete [] perplexity[i];
         delete [] perplexity;
+    }
     perplexity = new double *[nExperiments];
     if (perplexityAvr)
         delete perplexityAvr;
@@ -212,27 +234,26 @@ void MainWindow::Estimate()
     }
     perplexityAvrCurve->setRawSamples(iters, perplexityAvr, 0);
     if (distance)
+    {
+        for (int i = 0; i < nExperiments; ++i)
+            delete [] distance[i];
         delete [] distance;
+    }
     if (distanceAvr)
         delete distanceAvr;
     distanceAvrCurve->setRawSamples(iters, distanceAvr, 0);
     distanceAvr = new double [size + 1];
     distance = new double *[nExperiments];
-    /*
-    perplexityCurve->setRawSamples(iters, perplexity, 0);
-    distanceCurve->setRawSamples(iters, distance, 0);
-    perplexityCurve->show();
-    */
     QString phiPath = ui->phiPathEdit->text();
     QString thetaPath = ui->thetaPathEdit->text();
     int KReal = ui->realTopicBox->value();
     bool useHungarian = ui->hungarianBox->isChecked();
-    /*
-    if (useHungarian)
-        distanceCurve->show();
-    */
     if (estThreads)
+    {
+        for (int i = 0; i < nExperiments; ++i)
+            delete estThreads[i];
         delete [] estThreads;
+    }
     estThreads = new EstimateThread *[nExperiments];
     if (perplexityCurves)
     {
@@ -250,7 +271,6 @@ void MainWindow::Estimate()
     distanceCurves = new QwtPlotCurve *[nExperiments];
     for (int i = 0; i < nExperiments; ++i) {
         model *lda = new model;
-        lda->set_default_values();
         lda->progress_callback = (PCALLBACK)progressCallback;
         lda->perplexity_callback = (DCALLBACK)perplexityCallback;
         lda->distance_callback = (DCALLBACK)distanceCallback;
@@ -310,7 +330,6 @@ void MainWindow::Inference()
         return;
     setControls(false);
     model *lda = new model;
-    lda->set_default_values();
     lda->progress_callback = (PCALLBACK)progressCallback;
     lda->perplexity_callback = (DCALLBACK)perplexityCallback;
     lda->distance_callback = (DCALLBACK)distanceCallback;
@@ -332,7 +351,6 @@ void MainWindow::Inference()
         lda->dir = ldaParam.substr(0, idx + 1);
     }
     utils::read_and_parse(ldaParam, lda);
-    //lda->init_inf();
     if (infThread)
         delete infThread;
     infThread = new InferenceThread(lda);
@@ -349,10 +367,7 @@ void MainWindow::Generate()
     setControls(false);
     ui->statusBar->showMessage("Generating document collection...");
     model *lda = new model;
-    lda->set_default_values();
     lda->progress_callback = (PCALLBACK)progressCallback;
-    //lda->perplexity_callback = (DCALLBACK)perplexityCallback;
-    //lda->distance_callback = (DCALLBACK)distanceCallback;
     lda->parent = this;
     lda->M = ui->genNdocBox->value();
     lda->K = ui->genNTopicBox->value();
@@ -389,10 +404,6 @@ void MainWindow::SavePlot()
     selected.remove(selected.size() - 1, 1);
     QString perpName = fileName + ".perp." + selected;
     QString distName = fileName + ".dist." + selected;
-    /*
-    if (!fileName.endsWith("." + selected))
-        fileName.append("." + selected);
-    */
     QImage image(perplexityPlot->size(), QImage::Format_RGB32);
     QImageWriter imageWriter;
     imageWriter.setFileName(perpName);
@@ -403,6 +414,18 @@ void MainWindow::SavePlot()
     imageWriter.setFileName(distName);
     distancePlot->render(&image);
     imageWriter.write(image);
+}
+
+void MainWindow::SavePlotVector()
+{
+    QString fileName = QFileDialog::getSaveFileName(this,
+                                                    tr("Save plot image in vector format (*.svg)."),
+                                                    QDir::currentPath());
+    if (fileName.isNull())
+        return;
+    QwtPlotRenderer renderer;
+    renderer.renderDocument(perplexityPlot, fileName + "_perp.svg", "svg", QSize(120, 140), 150);
+    renderer.renderDocument(distancePlot, fileName + "_dist.svg", "svg", QSize(120, 140), 150);
 }
 
 void MainWindow::ClearPlot()
@@ -479,7 +502,7 @@ bool MainWindow::event(QEvent *event)
             if (!message.isNull())
                 ui->statusBar->showMessage(message);
         } while(!message.isNull());
-    /*} else if (event->type() == (QEvent::Type)(QEvent::User + 2)) {
+        /*} else if (event->type() == (QEvent::Type)(QEvent::User + 2)) {
         // Message event
         QMessageEvent *mEvent = (QMessageEvent *)event;
         ui->statusBar->showMessage(QString(mEvent->message.c_str()));*/
@@ -491,7 +514,7 @@ bool MainWindow::event(QEvent *event)
         perplexityAvr[lastIter[pEvent->experiment]] += pEvent->perplexity / nExperiments;
         iters[lastIter[pEvent->experiment]] = pEvent->iter;
         perplexityCurves[pEvent->experiment]->setRawSamples(iters,
-                perplexity[pEvent->experiment], lastIter[pEvent->experiment] + 1);
+                                                            perplexity[pEvent->experiment], lastIter[pEvent->experiment] + 1);
         int minIter = lastIter[pEvent->experiment];
         for (int i = 0; i < nExperiments; ++i) {
             if (lastIter[i] < minIter) {
@@ -500,16 +523,13 @@ bool MainWindow::event(QEvent *event)
         }
         //perplexityAvrCurve->setRawSamples(iters, perplexityAvr, minIter + 1);
         perplexityPlot->replot();
-        //qDebug() << pEvent->iter << pEvent->perplexity;
     } else if (event->type() == (QEvent::Type)(QEvent::User + 4)) {
         // Distance event
         QDistanceEvent *pEvent = (QDistanceEvent *)event;
-        //double dist = pEvent->distance;
-        //qDebug() << pEvent->iter << dist;
         distance[pEvent->experiment][lastIter[pEvent->experiment]] = pEvent->distance;
         distanceAvr[lastIter[pEvent->experiment]] += pEvent->distance / nExperiments;
         distanceCurves[pEvent->experiment]->setRawSamples(iters,
-                distance[pEvent->experiment], lastIter[pEvent->experiment] + 1);
+                                                          distance[pEvent->experiment], lastIter[pEvent->experiment] + 1);
         int minIter = lastIter[pEvent->experiment];
         for (int i = 0; i < nExperiments; ++i) {
             if (lastIter[i] < minIter) {
@@ -540,11 +560,11 @@ void MainWindow::ThreadFinish()
                 minIdx = j;
             }
         }
-        perplexityCurves[minIdx]->setPen(Qt::yellow, 3);
+        perplexityCurves[minIdx]->setPen(Qt::red, 3);
         perplexityCurves[minIdx]->detach();
         perplexityCurves[minIdx]->attach(perplexityPlot);
         perplexityPlot->replot();
-        distanceCurves[minIdx]->setPen(Qt::yellow, 3);
+        distanceCurves[minIdx]->setPen(Qt::red, 3);
         distanceCurves[minIdx]->detach();
         distanceCurves[minIdx]->attach(distancePlot);
         distancePlot->replot();
@@ -553,6 +573,8 @@ void MainWindow::ThreadFinish()
 
 void MainWindow::UseHungarian(int enable)
 {
+    ui->gammaBox->setVisible(enable);
+    ui->gammaLabel->setVisible(enable);
     ui->phiPathButton->setVisible(enable);
     ui->phiPathEdit->setVisible(enable);
     ui->phiPathLabel->setVisible(enable);

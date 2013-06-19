@@ -24,6 +24,7 @@
 #ifndef        _DATASET_H
 #define        _DATASET_H
 
+#include <cstdlib>
 #include <string>
 #include <vector>
 #include <map>
@@ -113,10 +114,10 @@ public:
     
     ~document() {
         if (words) {
-            delete words;
+            delete [] words;
         }
         if (word_counts) {
-            delete word_counts;
+            free(word_counts);
         }
     }
 };
@@ -148,14 +149,14 @@ public:
             for (int i = 0; i < M; i++) {
                 delete docs[i];
             }
-            delete docs;
+            delete [] docs;
         }
         
         if (_docs) {
             for (int i = 0; i < M; i++) {
                 delete _docs[i];
             }
-            delete _docs;
+            delete [] _docs;
         }
     }
     
@@ -165,7 +166,7 @@ public:
                 delete docs[i];
             }
         }
-        delete docs;
+        delete [] docs;
         docs = NULL;
 
         if (_docs) {
@@ -173,7 +174,7 @@ public:
                 delete _docs[i];
             }
         }
-        delete _docs;
+        delete [] _docs;
         _docs = NULL;
     }
     

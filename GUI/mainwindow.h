@@ -8,11 +8,13 @@
 #include <QPolygon>
 #include <QImage>
 #include <QImageWriter>
+#include <QtSvg>
 #include <qmath.h>
 #include <qwt/qwt_plot.h>
 #include <qwt/qwt_plot_curve.h>
 #include <qwt/qwt_legend.h>
 #include <qwt/qwt_plot_grid.h>
+#include <qwt/qwt_plot_renderer.h>
 #include <QDebug>
 #include <cstdlib>
 #include <cstdio>
@@ -76,6 +78,7 @@ private slots:
     void LoadModel();
     void SaveModel();
     void SavePlot();
+    void SavePlotVector();
     void ClearPlot();
     void About();
 

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>901</width>
-    <height>378</height>
+    <height>461</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -417,7 +417,7 @@
           <item row="2" column="0">
            <widget class="QCheckBox" name="softBox">
             <property name="text">
-             <string>Use soft</string>
+             <string>Use half-smoothing</string>
             </property>
            </widget>
           </item>
@@ -779,7 +779,7 @@
      <item row="0" column="1" rowspan="2">
       <widget class="QTabWidget" name="graphicsTab">
        <property name="currentIndex">
-        <number>1</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="perpTab">
         <attribute name="title">
@@ -824,7 +824,7 @@
      <x>0</x>
      <y>0</y>
      <width>901</width>
-     <height>22</height>
+     <height>19</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -855,6 +855,7 @@
      <string>Plot</string>
     </property>
     <addaction name="actionSavePlot"/>
+    <addaction name="actionSavePlotVector"/>
     <addaction name="actionClearPlot"/>
    </widget>
    <addaction name="menuFile"/>
@@ -918,6 +919,11 @@
   <action name="actionPlotParams">
    <property name="text">
     <string>Parameters</string>
+   </property>
+  </action>
+  <action name="actionSavePlotVector">
+   <property name="text">
+    <string>Save in *.svg</string>
    </property>
   </action>
  </widget>
