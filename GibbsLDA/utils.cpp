@@ -101,45 +101,45 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
             return 1;
         }
         
-        pmodel->model_status = model_status;
+        pmodel->set_model_status(model_status);
         
         if (K > 0) {
-            pmodel->K = K;
+            pmodel->set_topics_number(K);
         }
         
         if (alpha >= 0.0) {
-            pmodel->alpha = alpha;
+            pmodel->set_alpha(alpha);
         } else {
             // default value for alpha
-            pmodel->alpha = 50.0 / pmodel->K;
+            pmodel->set_alpha(50.0 / pmodel->get_topics_number());
         }
         
         if (beta >= 0.0) {
-            pmodel->beta = beta;
+            pmodel->set_beta(beta);
         }
         
         if (niters > 0) {
-            pmodel->niters = niters;
+            pmodel->set_iterations(niters);
         }
         
         if (savestep > 0) {
-            pmodel->savestep = savestep;
+            pmodel->set_save_iteration(savestep);
         }
         
         if (twords > 0) {
-            pmodel->twords = twords;
+            pmodel->set_twords(twords);
         }
         
-        pmodel->dfile = dfile;
+        pmodel->set_data_file(dfile);
         
         string::size_type idx = dfile.find_last_of("/");
         if (idx == string::npos) {
-            pmodel->dir = "./";
+            pmodel->set_work_dir("./");
         } else {
-            pmodel->dir = dfile.substr(0, idx + 1);
-            pmodel->dfile = dfile.substr(idx + 1, dfile.size() - pmodel->dir.size());
-            printf("dir = %s\n", pmodel->dir.c_str());
-            printf("dfile = %s\n", pmodel->dfile.c_str());
+            pmodel->set_work_dir(dfile.substr(0, idx + 1));
+            pmodel->set_data_file(dfile.substr(idx + 1, dfile.size() - pmodel->get_work_dir().size()));
+            printf("dir = %s\n", pmodel->get_work_dir().c_str());
+            printf("dfile = %s\n", pmodel->get_data_file().c_str());
         }
     }
     
@@ -154,29 +154,29 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
             return 1;
         }
 
-        pmodel->model_status = model_status;
+        pmodel->set_model_status(model_status);
 
         if (dir[dir.size() - 1] != '/') {
             dir += "/";
         }
-        pmodel->dir = dir;
+        pmodel->set_work_dir(dir);
 
-        pmodel->model_name = model_name;
+        pmodel->set_model_name(model_name);
 
         if (niters > 0) {
-            pmodel->niters = niters;
+            pmodel->set_iterations(niters);
         }
         
         if (savestep > 0) {
-            pmodel->savestep = savestep;
+            pmodel->set_save_iteration(savestep);
         }
         
         if (twords > 0) {
-            pmodel->twords = twords;
+            pmodel->set_twords(twords);
         }
         
         // read <model>.others file to assign values for ntopics, alpha, beta, etc.
-        if (read_and_parse(pmodel->dir + pmodel->model_name + pmodel->others_suffix, pmodel)) {
+        if (read_and_parse(pmodel->get_work_dir() + pmodel->get_model_name() + pmodel->get_others_suffix(), pmodel)) {
             return 1;
         }
     }
@@ -197,34 +197,34 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
             return 1;
         }
         
-        pmodel->model_status = model_status;
+        pmodel->set_model_status(model_status);
 
         if (dir[dir.size() - 1] != '/') {
             dir += "/";
         }
-        pmodel->dir = dir;
+        pmodel->set_work_dir(dir);
         
-        pmodel->model_name = model_name;
+        pmodel->set_model_name(model_name);
 
-        pmodel->dfile = dfile;
+        pmodel->set_data_file(dfile);
 
         if (niters > 0) {
-            pmodel->niters = niters;
+            pmodel->set_iterations(niters);
         } else {
             // default number of Gibbs sampling iterations for doing inference
-            pmodel->niters = 20;
+            pmodel->set_iterations(20);
         }
         
         if (twords > 0) {
-            pmodel->twords = twords;
+            pmodel->set_twords(twords);
         }
         
         if (withrawdata > 0) {
-            pmodel->withrawstrs = withrawdata;
+            pmodel->set_withrawstrs(withrawdata);
         }
 
         // read <model>.others file to assign values for ntopics, alpha, beta, etc.
-        if (read_and_parse(pmodel->dir + pmodel->model_name + pmodel->others_suffix, pmodel)) {
+        if (read_and_parse(pmodel->get_work_dir() + pmodel->get_model_name() + pmodel->get_others_suffix(), pmodel)) {
             return 1;
         }
     }
@@ -269,22 +269,22 @@ int utils::read_and_parse(string filename, model * pmodel) {
         string optval = strtok.token(1).first;
         
         if (optstr == "alpha") {
-            pmodel->alpha = atof(optval.c_str());
+            pmodel->set_alpha(atof(optval.c_str()));
             
         } else if (optstr == "beta") {
-            pmodel->beta = atof(optval.c_str());
+            pmodel->set_beta(atof(optval.c_str()));
 
         } else if (optstr == "ntopics") {
-            pmodel->K = atoi(optval.c_str());
+            pmodel->set_topics_number(atoi(optval.c_str()));
 
         } else if (optstr == "ndocs") {
-            pmodel->M = atoi(optval.c_str());
+            pmodel->set_document_number(atoi(optval.c_str()));
 
         } else if (optstr == "nwords") {
-            pmodel->V = atoi(optval.c_str());
+            pmodel->set_words_number(atoi(optval.c_str()));
 
         } else if (optstr == "liter") {
-            pmodel->liter = atoi(optval.c_str());
+            pmodel->set_last_iteration(atoi(optval.c_str()));
 
         } else {
             // any more?
@@ -296,9 +296,8 @@ int utils::read_and_parse(string filename, model * pmodel) {
     return 0;
 }
 
-string utils::generate_model_name(int iter) {
-    string model_name = "model-";
-
+string utils::generate_model_name(string model_name, int iter) {
+    model_name += "-";
     char buff[BUFF_SIZE_SHORT];
     sprintf(buff, "%05d", iter);
     if (iter >= 0) {
@@ -315,25 +314,25 @@ double utils::calc_perplexity(model *pmodel)
     double perplexity = 0;
     int size = 0;
 
-    for (int d = 0; d < pmodel->M; ++d) {
-        for (int i = 0; i < pmodel->ptrndata->docs[d]->length; ++i) {
-            if (pmodel->ptrndata->docs[d]->word_counts[i] == 0) {
+    for (int d = 0; d < pmodel->get_document_number(); ++d) {
+        for (int i = 0; i < pmodel->get_doc_length(d); ++i) {
+            if (pmodel->get_word_counts(d, i) == 0) {
                 continue;
             }
-            int w = pmodel->ptrndata->docs[d]->words[i];
+            int w = pmodel->get_word(d, i);
             double logsum = 0;
-            for (int t = 0; t < pmodel->K; ++t) {
-                logsum += pmodel->phi[t][w] * pmodel->theta[d][t];
+            for (int t = 0; t < pmodel->get_topics_number(); ++t) {
+                logsum += pmodel->get_phi(w, t) * pmodel->get_theta(t, d);
             }
             if (logsum < eps) {
-                logsum = pmodel->ptrndata->docs[d]->word_counts[i] /
-                        pmodel->ptrndata->docs[d]->real_length;
+                logsum = pmodel->get_word_counts(d, i) /
+                        pmodel->get_doc_real_length(d);
             } else {
                 logsum = log(logsum);
             }
-            perplexity += logsum * pmodel->ptrndata->docs[d]->word_counts[i];
+            perplexity += logsum * pmodel->get_word_counts(d, i);
         }
-        size += pmodel->ptrndata->docs[d]->real_length;
+        size += pmodel->get_doc_real_length(d);
     }
 
     return exp(-perplexity / size);

@@ -24,6 +24,11 @@
 #include "model.h"
 #include "utils.h"
 
+enum
+{
+    BUFF_SIZE = 255
+};
+
 namespace Ui {
 class MainWindow;
 }

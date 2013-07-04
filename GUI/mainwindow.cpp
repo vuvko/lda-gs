@@ -14,28 +14,12 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->distTab->setLayout(ui->distLayout);
     perplexityPlot = new QwtPlot(tr("Perplexity"));
     distancePlot = new QwtPlot(tr("Mean of hellinger distance"));
-    //perplexityPlot->insertLegend(new QwtLegend());
     perplexityPlot->setAxisTitle(QwtPlot::xBottom, "Iterations");
     distancePlot->setAxisTitle(QwtPlot::xBottom, "Iterations");
-    //perplexityPlot->setAxisTitle(QwtPlot::yLeft, "Value"); // what does it say to you?
     perplexityPlot->setCanvasBackground(QBrush(Qt::white));
     distancePlot->setCanvasBackground(QBrush(Qt::white));
-    //perplexityPlot->setAutoReplot(true); // use replot() instead
-    //ui->mainLayout->addWidget(perplexityPlot, 0, 1, 2, 1);
     ui->perpLayout->addWidget(perplexityPlot);
     ui->distLayout->addWidget(distancePlot);
-    /*
-    perplexityCurve = new QwtPlotCurve(tr("Perplexity"));
-    distanceCurve = new QwtPlotCurve(tr("Distance"));
-    perplexityCurve->setRenderHint(QwtPlotItem::RenderAntialiased, true);
-    distanceCurve->setRenderHint(QwtPlotItem::RenderAntialiased, true);
-    perplexityCurve->setPen(Qt::red, 3);
-    distanceCurve->setPen(Qt::green, 3);
-    perplexityCurve->attach(perplexityPlot);
-    distanceCurve->attach(distancePlot);
-    perplexityCurve->hide();
-    distanceCurve->hide();
-    */
     perplexityCurves = 0;
     distanceCurves = 0;
     perplexityAvrCurve = new QwtPlotCurve(tr("Average perplexity"));
@@ -69,7 +53,7 @@ MainWindow::MainWindow(QWidget *parent) :
     estThreads = 0;
     genThread = 0;
     running = false;
-    nExperiments = 1;
+    nExperiments = 10;
     lastIter = new int[nExperiments];
     connect(ui->actionLoad, SIGNAL(triggered()), this, SLOT(LoadModel()));
     connect(ui->actionSave, SIGNAL(triggered()), this, SLOT(SaveModel()));
@@ -151,7 +135,8 @@ MainWindow::~MainWindow()
     logFile->close();
     delete log;
     delete logFile;
-    delete [] lastIter;
+    if (lastIter)
+        delete [] lastIter;
 }
 
 void MainWindow::About() {}
@@ -187,9 +172,8 @@ void MainWindow::BrowseTheta()
 void MainWindow::BrowseModelInf()
 {
     model lda;
-    //lda.set_default_values();
     char filter[255];
-    sprintf(filter, "Model (*%s)", lda.others_suffix.c_str());
+    sprintf(filter, "Model (*%s)", lda.get_others_suffix().c_str());
     QString fileName = QFileDialog::getOpenFileName(this,
                                                     tr("Choose model parameters file"),
                                                     QDir::currentPath(),
@@ -269,38 +253,37 @@ void MainWindow::Estimate()
         delete [] distanceCurves;
     }
     distanceCurves = new QwtPlotCurve *[nExperiments];
+    char buff[BUFF_SIZE];
     for (int i = 0; i < nExperiments; ++i) {
         model *lda = new model;
-        lda->progress_callback = (PCALLBACK)progressCallback;
-        lda->perplexity_callback = (DCALLBACK)perplexityCallback;
-        lda->distance_callback = (DCALLBACK)distanceCallback;
-        lda->parent = this;
-        lda->r_iter = ui->iterRobBox->value();
-        lda->phi_perc = ui->phiRobBox->value();
-        lda->theta_perc = ui->thetaRobBox->value();
-        lda->model_status = MODEL_STATUS_EST;
-        lda->K = ui->estTopicBox->value();
-        if (ui->alphaBox->value() > eps)
-            lda->alpha = ui->alphaBox->value();
-        if (ui->betaBox->value() > eps)
-            lda->beta = ui->betaBox->value();
-        lda->niters = nIters;
-        lda->savestep = ui->estSaveBox->value();
+        lda->set_callbacks((PCALLBACK)progressCallback, (DCALLBACK)perplexityCallback, (DCALLBACK)distanceCallback, this);
+        lda->set_robast_iter(ui->iterRobBox->value());
+        lda->set_phi_percentage(ui->phiRobBox->value());
+        lda->set_theta_percentage(ui->thetaRobBox->value());
+        lda->set_model_status(MODEL_STATUS_EST);
+        lda->set_topics_number(ui->estTopicBox->value());
+        if (ui->alphaBox->value() > -eps)
+            lda->set_alpha(ui->alphaBox->value());
+        if (ui->betaBox->value() > -eps)
+            lda->set_beta(ui->betaBox->value());
+        lda->set_iterations(nIters);
+        lda->set_save_iteration(ui->estSaveBox->value());
         if (ui->estTwordBox->value() > 0)
-            lda->twords = ui->estTwordBox->value();
-        lda->dfile = ui->estDataEdit->text().toStdString();
-        string::size_type idx = lda->dfile.find_last_of("/");
+            lda->set_twords(ui->estTwordBox->value());
+        lda->set_data_file(ui->estDataEdit->text().toStdString());
+        string::size_type idx = lda->get_data_file().find_last_of("/");
         if (idx == string::npos) {
-            lda->dir = "./";
+            lda->set_work_dir("./");
         } else {
-            lda->dir = lda->dfile.substr(0, idx + 1);
-            lda->dfile = lda->dfile.substr(idx + 1, lda->dfile.size() - lda->dir.size());
+            lda->set_work_dir(lda->get_data_file().substr(0, idx + 1));
+            lda->set_data_file(lda->get_data_file().substr(idx + 1, lda->get_data_file().size() - lda->get_work_dir().size()));
         }
-        lda->piter = pIter;
-        lda->use_soft = ui->softBox->isChecked();
-        lda->gamma = ui->gammaBox->value();
-        lda->experiment = i;
-        lda->model_name = "experimet-" + i;
+        lda->set_perplexity_iter(pIter);
+        lda->use_half_smoothing(ui->softBox->isChecked());
+        lda->set_gamma(ui->gammaBox->value());
+        lda->set_experiment_number(i);
+        sprintf(buff, "experiment-%d", i);
+        lda->set_model_name(buff);
         lastIter[i] = -1;
         perplexity[i] = new double[size + 1];
         distance[i] = new double[size + 1];
@@ -330,25 +313,22 @@ void MainWindow::Inference()
         return;
     setControls(false);
     model *lda = new model;
-    lda->progress_callback = (PCALLBACK)progressCallback;
-    lda->perplexity_callback = (DCALLBACK)perplexityCallback;
-    lda->distance_callback = (DCALLBACK)distanceCallback;
-    lda->parent = this;
-    lda->model_status = MODEL_STATUS_INF;
-    lda->niters = ui->infIterBox->value();
+    lda->set_callbacks((PCALLBACK)progressCallback, (DCALLBACK)perplexityCallback, (DCALLBACK)distanceCallback, this);
+    lda->set_model_status(MODEL_STATUS_INF);
+    lda->set_iterations(ui->infIterBox->value());
     if (ui->infTwordsBox->value() > 0)
-        lda->twords = ui->infTwordsBox->value();
-    lda->dfile = ui->infDataEdit->text().toStdString();
-    string::size_type idx = lda->dfile.find_last_of("/");
+        lda->set_twords(ui->infTwordsBox->value());
+    lda->set_data_file(ui->infDataEdit->text().toStdString());
+    string::size_type idx = lda->get_data_file().find_last_of("/");
     if (idx != string::npos) {
-        lda->dfile = lda->dfile.substr(idx + 1, lda->dfile.size() - lda->dir.size());
+        lda->set_data_file(lda->get_data_file().substr(idx + 1, lda->get_data_file().size() - lda->get_work_dir().size()));
     }
     string ldaParam = ui->infModelEdit->text().toStdString();
     idx = ldaParam.find_last_of("/");
     if (idx == string::npos) {
-        lda->dir = "./";
+        lda->set_work_dir("./");
     } else {
-        lda->dir = ldaParam.substr(0, idx + 1);
+        lda->set_work_dir(ldaParam.substr(0, idx + 1));
     }
     utils::read_and_parse(ldaParam, lda);
     if (infThread)
@@ -367,14 +347,12 @@ void MainWindow::Generate()
     setControls(false);
     ui->statusBar->showMessage("Generating document collection...");
     model *lda = new model;
-    lda->progress_callback = (PCALLBACK)progressCallback;
-    lda->parent = this;
-    lda->M = ui->genNdocBox->value();
-    lda->K = ui->genNTopicBox->value();
-    lda->V = ui->genNWordsBox->value();
-    lda->alpha = ui->genAlphaBox->value();
-    lda->beta = ui->genBetaBox->value();
-    lda->experiment = 0;
+    lda->set_callbacks((PCALLBACK)progressCallback, 0, 0, this);
+    lda->set_document_number(ui->genNdocBox->value());
+    lda->set_topics_number(ui->genNTopicBox->value());
+    lda->set_words_number(ui->genNWordsBox->value());
+    lda->set_hyperparameters(ui->genAlphaBox->value(), ui->genBetaBox->value());
+    lda->set_experiment_number(0);
     if (genThread)
         delete genThread;
     genThread = new GenerateThread(lda, ui->genDataEdit->text().toStdString(), ui->genNDWordsBox->value());
@@ -424,8 +402,8 @@ void MainWindow::SavePlotVector()
     if (fileName.isNull())
         return;
     QwtPlotRenderer renderer;
-    renderer.renderDocument(perplexityPlot, fileName + "_perp.svg", "svg", QSize(120, 140), 150);
-    renderer.renderDocument(distancePlot, fileName + "_dist.svg", "svg", QSize(120, 140), 150);
+    renderer.renderDocument(perplexityPlot, fileName + "_perp.svg", "svg", QSize(110, 115), 150);
+    renderer.renderDocument(distancePlot, fileName + "_dist.svg", "svg", QSize(110, 115), 150);
 }
 
 void MainWindow::ClearPlot()
@@ -495,13 +473,14 @@ bool MainWindow::event(QEvent *event)
 
         if (ui->progressBar->value() >= 100)
             setControls(true);
-
+/*
         QString message;
         do {
             message = log->readLine();
             if (!message.isNull())
                 ui->statusBar->showMessage(message);
         } while(!message.isNull());
+*/
         /*} else if (event->type() == (QEvent::Type)(QEvent::User + 2)) {
         // Message event
         QMessageEvent *mEvent = (QMessageEvent *)event;
