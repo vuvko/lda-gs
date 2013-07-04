@@ -41,7 +41,7 @@ namespace utils
     
     // generate the model name for the current iteration
     // iter = -1 => final model
-    string generate_model_name(int iter);
+    string generate_model_name(string model_name, int iter);
 
     // calculate perplexity
     double calc_perplexity(model * pmodel);

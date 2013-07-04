@@ -11,14 +11,14 @@ EstimateThread::EstimateThread(
 
 void EstimateThread::run()
 {
-    stdout = fopen("lda.log", "w");
-    lda->use_hungarian = useHungarian;
-    lda->K_real = KReal;
+    //stdout = fopen("lda.log", "w");
+    lda->use_hungarian_algorithm(useHungarian);
+    lda->set_real_topics_number(KReal);
     lda->init_est();
     lda->load_phi(phiPath.toStdString());
     lda->load_theta(thetaPath.toStdString());
     lda->estimate();
-    fclose(stdout);
+    //fclose(stdout);
     emit finished();
 }
 

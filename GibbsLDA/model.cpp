@@ -256,180 +256,7 @@ model::model()
     theta_perc = 0;
     r_iter = 0;
 }
-/*
-void model::set_default_values() {
-    wordmapfile = "wordmap.txt";
-    trainlogfile = "trainlog.txt";
-    tassign_suffix = ".tassign";
-    theta_suffix = ".theta";
-    phi_suffix = ".phi";
-    others_suffix = ".others";
-    twords_suffix = ".twords";
-    
-    dir = "./";
-    dfile = "trndocs.dat";
-    model_name = "model-final";
-    model_status = MODEL_STATUS_UNKNOWN;
-    if (p) {
-        delete p;
-    }
-    p = NULL;
-    if (ptrndata) {
-        delete ptrndata;
-    }
-    ptrndata = NULL;
-    if (pnewdata) {
-        delete pnewdata;
-    }
-    pnewdata = NULL;
-    use_hungarian = false;
-    if (z) {
-        for (int m = 0; m < M; m++) {
-            if (z[m]) {
-                delete z[m];
-            }
-        }
-    }
-    z = NULL;
-    if (nw) {
-        for (int w = 0; w < V; w++) {
-            if (nw[w]) {
-                delete nw[w];
-            }
-        }
-    }
-    nw = NULL;
-    if (nd) {
-        for (int m = 0; m < M; m++) {
-            if (nd[m]) {
-                delete nd[m];
-            }
-        }
-    }
-    nd = NULL;
-    if (nwsum) {
-        delete nwsum;
-    }
-    nwsum = NULL;
-    if (ndsum) {
-        delete ndsum;
-    }
-    ndsum = NULL;
-    if (theta) {
-        for (int m = 0; m < M; m++) {
-            if (theta[m]) {
-                delete theta[m];
-            }
-        }
-    }
-    theta = NULL;
-    if (theta_real) {
-        for (int m = 0; m < M; m++) {
-            if (theta_real[m]) {
-                delete theta_real[m];
-            }
-        }
-    }
-    theta_real = NULL;
-    if (inv_theta) {
-        for (int m = 0; m < M; ++m) {
-            if (inv_theta[m]) {
-                delete inv_theta[m];
-            }
-        }
-    }
-    inv_theta = NULL;
-    if (inv_theta_real) {
-        for (int m = 0; m < M; ++m) {
-            if (inv_theta_real[m]) {
-                delete inv_theta_real[m];
-            }
-        }
-    }
-    inv_theta_real = NULL;
-    if (phi) {
-        for (int k = 0; k < K; k++) {
-            if (phi[k]) {
-                delete phi[k];
-            }
-        }
-    }
-    phi = NULL;
-    if (phi_real) {
-        for (int k = 0; k < K; k++) {
-            if (phi_real[k]) {
-                delete phi_real[k];
-            }
-        }
-    }
-    phi_real = NULL;
-    // only for inference
-    if (newz) {
-        for (int m = 0; m < newM; m++) {
-            if (newz[m]) {
-                delete newz[m];
-            }
-        }
-    }
-    newz = NULL;
-    if (newnw) {
-        for (int w = 0; w < newV; w++) {
-            if (newnw[w]) {
-                delete newnw[w];
-            }
-        }
-    }
-    newnw = NULL;
-    if (newnd) {
-        for (int m = 0; m < newM; m++) {
-            if (newnd[m]) {
-                delete newnd[m];
-            }
-        }
-    }
-    newnd = NULL;
-    if (newnwsum) {
-        delete newnwsum;
-    }
-    newnwsum = NULL;
-    if (newndsum) {
-        delete newndsum;
-    }
-    newndsum = NULL;
-    if (newtheta) {
-        for (int m = 0; m < newM; m++) {
-            if (newtheta[m]) {
-                delete newtheta[m];
-            }
-        }
-    }
-    newtheta = NULL;
-    if (newphi) {
-        for (int k = 0; k < K; k++) {
-            if (newphi[k]) {
-                delete newphi[k];
-            }
-        }
-    }
-    newphi = NULL;
-    newM = 0;
-    newV = 0;
-    K = 100;
-    M = 0;
-    V = 0;
-    alpha = 50.0 / K;
-    beta = 0.1;
-    niters = 30;
-    liter = 0;
-    savestep = 200;
-    twords = 0;
-    withrawstrs = 0;
-    piter = 0;
-    phi_perc = 0;
-    theta_perc = 0;
-    r_iter = 0;
-}
-*/
+
 int model::parse_args(int argc, char ** argv) {
     return utils::parse_args(argc, argv, this);
 }
@@ -926,7 +753,6 @@ int model::init_est() {
                 z[m][n] = -1;
                 continue;
             }
-            //for (int k = 0; k < ptrndata->docs[m]->word_counts[n]; ++k) {
             int topic = (int)(((double)random() / RAND_MAX) * K);
             z[m][n] = topic;
 
@@ -936,11 +762,9 @@ int model::init_est() {
             nd[m][topic] += ptrndata->docs[m]->word_counts[n];
             // total number of words assigned to topic j
             nwsum[topic] += ptrndata->docs[m]->word_counts[n];
+            // total number of words in document i
             ndsum[m] += ptrndata->docs[m]->word_counts[n];
-            //}
         }
-        // total number of words in document i
-        //ndsum[m] = ptrndata->docs[m]->real_length;
     }
     
     theta = new double*[M];
@@ -1047,11 +871,11 @@ void model::estimate() {
         dataset::read_wordmap(dir + wordmapfile, &id2word);
     }
 
-    printf("Sampling %d iterations!\n", niters);
+    //printf("Sampling %d iterations!\n", niters);
 
     int last_iter = liter;
     for (liter = last_iter + 1; liter <= niters + last_iter; liter++) {
-        printf("Iteration %d ...\n", liter);
+        //printf("Iteration %d ...\n", liter);
         
         // for all z_i
         for (int m = 0; m < M; m++) {
@@ -1081,7 +905,7 @@ void model::estimate() {
                 printf("Saving the model at iteration %d ...\n", liter);
                 compute_theta();
                 compute_phi();
-                save_model(utils::generate_model_name(liter));
+                save_model(utils::generate_model_name(model_name, liter));
             }
         }
         if (piter > 0) {
@@ -1109,7 +933,7 @@ void model::estimate() {
         perplexity_callback(utils::calc_perplexity(this), liter, parent, experiment);
     }
     liter--;
-    save_model(utils::generate_model_name(-1));
+    save_model(utils::generate_model_name(model_name, -1));
 }
 
 int model::sampling(int m, int n) {
@@ -1123,12 +947,12 @@ int model::sampling(int m, int n) {
     ndsum[m] -= count;
 
     if (nw[w][topic] < 0) {
-        nw[w][topic] += count;
-        nwsum[topic] += count;
+        nw[w][topic] = 0;
+        nwsum[topic] = 0;
     }
     if (nd[m][topic] < 0) {
-        nd[m][topic] += count;
-        ndsum[topic] += count;
+        nd[m][topic] = 0;
+        ndsum[topic] = 0;
     }
 
     // do multinomial sampling via cumulative method
@@ -1607,4 +1431,226 @@ void model::generate_collection(string filename, int doc_len)
     if (progress_callback) {
         progress_callback(100, parent, experiment);
     }
+}
+
+void model::set_callbacks(PCALLBACK progress, DCALLBACK perplexity, DCALLBACK distance, void *parent_)
+{
+    progress_callback = progress;
+    perplexity_callback = perplexity;
+    distance_callback = distance;
+    parent = parent_;
+}
+
+void model::set_topics_number(int n_topics)
+{
+    K = n_topics;
+}
+
+void model::set_real_topics_number(int n_topics_real)
+{
+    K_real = n_topics_real;
+}
+
+void model::set_document_number(int n_docs)
+{
+    M = n_docs;
+}
+
+void model::set_words_number(int n_words)
+{
+    V = n_words;
+}
+
+void model::set_data_file(const string &data_file)
+{
+    dfile = data_file;
+}
+
+void model::set_work_dir(const string &work_dir)
+{
+    dir = work_dir;
+}
+
+void model::set_alpha(double new_alpha)
+{
+    alpha = new_alpha;
+}
+
+void model::set_beta(double new_beta)
+{
+    beta = new_beta;
+}
+
+void model::set_hyperparameters(double new_alpha, double new_beta)
+{
+    alpha = new_alpha;
+    beta = new_beta;
+}
+
+void model::set_model_name(const string &new_name)
+{
+    model_name = new_name;
+}
+
+void model::set_model_status(int i)
+{
+    model_status = i;
+}
+
+void model::set_experiment_number(int n_experiment)
+{
+    experiment = n_experiment;
+}
+
+void model::set_iterations(int n_iters)
+{
+    niters = n_iters;
+}
+
+void model::set_last_iteration(int new_liter)
+{
+    liter = new_liter;
+}
+
+void model::set_save_iteration(int n_save_iters)
+{
+    savestep = n_save_iters;
+}
+
+void model::set_perplexity_iter(int new_piter)
+{
+    piter = new_piter;
+}
+
+void model::set_twords(int new_twords)
+{
+    twords = new_twords;
+}
+
+void model::set_gamma(double new_gamma)
+{
+    gamma = new_gamma;
+}
+
+void model::use_half_smoothing(bool use_half_)
+{
+    use_soft = use_half_;
+}
+
+void model::use_hungarian_algorithm(bool use_hungarian_)
+{
+    use_hungarian = use_hungarian_;
+}
+
+void model::set_robast_iter(int r_iter_)
+{
+    r_iter = r_iter_;
+}
+
+void model::set_phi_percentage(int phi_perc_)
+{
+    phi_perc = phi_perc_;
+}
+
+void model::set_theta_percentage(int theta_perc_)
+{
+    theta_perc = theta_perc_;
+}
+
+void model::set_withrawstrs(int withrawstrs_)
+{
+    withrawstrs = withrawstrs_;
+}
+
+double model::get_alpha(void) const
+{
+    return alpha;
+}
+
+double model::get_beta(void) const
+{
+    return beta;
+}
+
+int model::get_document_number(void) const
+{
+    return M;
+}
+
+int model::get_topics_number(void) const
+{
+    return K;
+}
+
+int model::get_words_number(void) const
+{
+    return V;
+}
+
+string model::get_model_name(void) const
+{
+    return model_name;
+}
+
+string model::get_work_dir(void) const
+{
+    return dir;
+}
+
+string model::get_data_file(void) const
+{
+    return dfile;
+}
+
+string model::get_others_suffix(void) const
+{
+    return others_suffix;
+}
+
+int model::get_doc_length(int document) const
+{
+    if (document >= M) {
+        return 0;
+    }
+    return ptrndata->docs[document]->length;
+}
+
+int model::get_doc_real_length(int document) const
+{
+    if (document >= M) {
+        return 0;
+    }
+    return ptrndata->docs[document]->real_length;
+}
+
+int model::get_word_counts(int document, int word) const
+{
+    if (document >= M || word >= ptrndata->docs[document]->length) {
+        return 0;
+    }
+    return ptrndata->docs[document]->word_counts[word];
+}
+
+int model::get_word(int document, int word_number) const
+{
+    if (document >= M || word_number >= ptrndata->docs[document]->length) {
+        return 0;
+    }
+    return ptrndata->docs[document]->words[word_number];
+}
+
+double model::get_phi(int word, int topic) const
+{
+    if (word >= V || topic >= K) {
+        return -1;
+    }
+    return phi[topic][word];
+}
+
+double model::get_theta(int topic, int document) const
+{
+    if (topic >= K || document >= M) {
+        return -1;
+    }
+    return theta[document][topic];
 }

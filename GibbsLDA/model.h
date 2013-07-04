@@ -46,7 +46,6 @@ typedef void (*DCALLBACK)(double value, int iter, void *parent, int experiment);
 
 // LDA model
 class model {
-public:
     // fixed options
     string wordmapfile;                // file that contains word map [string -> integer id]
     string trainlogfile;        // training log file
@@ -120,12 +119,63 @@ public:
     double ** newtheta;
     double ** newphi;
     // --------------------------------------
-    
+    PCALLBACK progress_callback;
+    DCALLBACK perplexity_callback;
+    DCALLBACK distance_callback;
+    void *parent;
+
+    int sampling(int m, int n);
+    void sparse_theta();
+    void sparse_phi();
+    void compute_distance();
+
+    int inf_sampling(int m, int n);
+
+public:
     model();
     ~model();
-    
-    // set default values for variables
-    //void set_default_values();
+
+    void set_callbacks(PCALLBACK progress, DCALLBACK perplexity, DCALLBACK distance, void *parent_);
+    void set_topics_number(int n_topics);
+    void set_document_number(int n_docs);
+    void set_words_number(int n_words);
+    void set_alpha(double new_alpha);
+    void set_beta(double new_beta);
+    void set_hyperparameters(double new_alpha, double new_beta);
+    void set_model_name(const string &new_name);
+    void set_model_status(int i);
+    void set_experiment_number(int n_experiment);
+    void set_iterations(int n_iters);
+    void set_last_iteration(int new_liter);
+    void set_save_iteration(int n_save_iters);
+    void set_twords(int new_twords);
+    void set_perplexity_iter(int new_piter);
+    void set_gamma(double new_gamma);
+    void use_half_smoothing(bool use_half_ = true);
+    void use_hungarian_algorithm(bool use_hungarian_ = true);
+    void set_real_topics_number(int n_topics_real);
+    void set_robast_iter(int r_iter_);
+    void set_phi_percentage(int phi_perc_);
+    void set_theta_percentage(int theta_perc_);
+    void set_data_file(const string &data_file);
+    void set_work_dir(const string &work_dir);
+    void set_withrawstrs(int withrawstrs_);
+
+    int get_topics_number(void) const;
+    int get_document_number(void) const;
+    int get_words_number(void) const;
+    double get_alpha(void) const;
+    double get_beta(void) const;
+    string get_model_name(void) const;
+    string get_work_dir(void) const;
+    string get_data_file(void) const;
+    string get_others_suffix(void) const;
+    int get_doc_length(int document) const;
+    int get_doc_real_length(int document) const;
+    int get_word_counts(int document, int word) const;
+    int get_word(int document, int word_number) const;
+    double get_phi(int word, int topic) const;
+    double get_theta(int topic, int document) const;
 
     // parse command line to get options
     int parse_args(int argc, char ** argv);
@@ -168,28 +218,18 @@ public:
         
     // estimate LDA model using Gibbs sampling
     void estimate();
-    int sampling(int m, int n);
     void compute_theta();
     void compute_phi();
-    void sparse_theta();
-    void sparse_phi();
-    void compute_distance();
     
     // init for inference
     int init_inf();
     // inference for new (unseen) data based on the estimated LDA model
     void inference();
-    int inf_sampling(int m, int n);
     void compute_newtheta();
     void compute_newphi();
 
     // generate document collection
     void generate_collection(string filename, int doc_len);
-
-    PCALLBACK progress_callback;
-    DCALLBACK perplexity_callback;
-    DCALLBACK distance_callback;
-    void *parent;
 };
 
 #endif
