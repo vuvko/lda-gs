@@ -269,6 +269,9 @@ int model::init(int argc, char ** argv) {
     
     if (model_status == MODEL_STATUS_EST) {
         // estimating the model from scratch
+        if (use_hungarian) {
+            return 0;
+        }
         if (init_est()) {
             return 1;
         }
@@ -1653,4 +1656,9 @@ double model::get_theta(int topic, int document) const
         return -1;
     }
     return theta[document][topic];
+}
+
+int model::get_model_status(void) const
+{
+    return model_status;
 }

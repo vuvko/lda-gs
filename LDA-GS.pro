@@ -3,4 +3,5 @@ TEMPLATE = subdirs
 SUBDIRS += \
     Munkres \
     GibbsLDA \
-    GUI
+    GUI \
+    Console

@@ -37,6 +37,9 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
     string dir = "";
     string model_name = "";
     string dfile = "";
+    string phi_file = "";
+    string theta_file = "";
+    bool use_hungarian = false;
     double alpha = -1.0;
     double beta = -1.0;
     int K = 0;
@@ -48,48 +51,44 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
     int i = 0;
     while (i < argc) {
         string arg = argv[i];
-        
         if (arg == "-est") {
             model_status = MODEL_STATUS_EST;
-            
         } else if (arg == "-estc") {
             model_status = MODEL_STATUS_ESTC;
-            
         } else if (arg == "-inf") {
             model_status = MODEL_STATUS_INF;
-            
         } else if (arg == "-dir") {
             dir = argv[++i];
-            
         } else if (arg == "-dfile") {
             dfile = argv[++i];
-            
         } else if (arg == "-model") {
             model_name = argv[++i];
-            
         } else if (arg == "-alpha") {
             alpha = atof(argv[++i]);
-            
         } else if (arg == "-beta") {
             beta = atof(argv[++i]);
-            
         } else if (arg == "-ntopics") {
             K = atoi(argv[++i]);
-            
         } else if (arg == "-niters") {
             niters = atoi(argv[++i]);
-            
         } else if (arg == "-savestep") {
             savestep = atoi(argv[++i]);
-            
         } else if (arg == "-twords") {
             twords = atoi(argv[++i]);
-            
         } else if (arg == "-withrawdata") {
             withrawdata = 1;
-
-        } else {
-            // any more?
+        } else if (arg == "-use_hungarian"){
+            use_hungarian = true;
+        } else if (arg == "-real_ntopics") {
+            pmodel->set_real_topics_number(atoi(argv[++i]));
+        } else if (arg == "-gamma") {
+            pmodel->set_gamma(atof(argv[++i]));
+        } else if (arg == "-real_phi") {
+            phi_file = argv[++i];
+        } else if (arg == "-real_theta") {
+            theta_file = argv[++i];
+        } else if (arg == "-use_half_smooth") {
+            pmodel->use_half_smoothing();
         }
 
         i++;
@@ -100,7 +99,6 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
             printf("Please specify the input data file for model estimation!\n");
             return 1;
         }
-        
         pmodel->set_model_status(model_status);
         
         if (K > 0) {
@@ -129,7 +127,6 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
         if (twords > 0) {
             pmodel->set_twords(twords);
         }
-        
         pmodel->set_data_file(dfile);
         
         string::size_type idx = dfile.find_last_of("/");
@@ -140,6 +137,15 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
             pmodel->set_data_file(dfile.substr(idx + 1, dfile.size() - pmodel->get_work_dir().size()));
             printf("dir = %s\n", pmodel->get_work_dir().c_str());
             printf("dfile = %s\n", pmodel->get_data_file().c_str());
+        }
+
+        if (use_hungarian) {
+            pmodel->use_hungarian_algorithm();
+            if (pmodel->init_est()) {
+                return 1;
+            }
+            pmodel->load_phi(phi_file);
+            pmodel->load_theta(theta_file);
         }
     }
     
