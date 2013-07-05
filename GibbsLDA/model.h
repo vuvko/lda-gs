@@ -176,6 +176,7 @@ public:
     int get_word(int document, int word_number) const;
     double get_phi(int word, int topic) const;
     double get_theta(int topic, int document) const;
+    int get_model_status(void) const;
 
     // parse command line to get options
     int parse_args(int argc, char ** argv);
